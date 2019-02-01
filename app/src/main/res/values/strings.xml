@@ -18,4 +18,8 @@
     <string name="repeat_code">Please repeat code</string>
     <string name="wrong_code">Wrong entered code!</string>
     <string name="mismatch_code">Entered codes mismatch!</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="alert">Alert!!!</string>
+    <string name="query_reset_psw">Reset code?</string>
 </resources>

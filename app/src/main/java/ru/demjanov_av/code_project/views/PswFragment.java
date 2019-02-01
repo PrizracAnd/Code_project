@@ -3,7 +3,6 @@ package ru.demjanov_av.code_project.views;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,23 +13,24 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import ru.demjanov_av.code_project.R;
-import ru.demjanov_av.code_project.presenters.MainView;
 import ru.demjanov_av.code_project.presenters.PswPresenter;
+import ru.demjanov_av.code_project.views.dialogs.FragmentDialogYesNo;
 
 /**
  * Created by demjanov on 31.01.2019.
  */
 
-public class PswFragment extends Fragment implements MainView {
+public class PswFragment extends MyFragment {
 
     //-----Constants variables begin---------------------
     private final static int CODE_NUMBERS_COUNT = 4;
-    private PswPresenter presenter;
+    private final static String QUERY_RESET_TAG = "QUERY_RESET_PSW";
     //-----Constants variables end-----------------------
 
 
     //-----Class variables begin-------------------------
     private View view;
+    private PswPresenter presenter;
     int[] codeNumbers = new int[CODE_NUMBERS_COUNT];
     //-----Class variables begin-------------------------
 
@@ -241,10 +241,12 @@ public class PswFragment extends Fragment implements MainView {
         this.tableLayout.setClickable(false);
     }
 
+
     @Override
     public void endLoad() {
         this.tableLayout.setClickable(true);
     }
+
 
     @Override
     public void setError(int number, @Nullable String message) {
@@ -257,10 +259,18 @@ public class PswFragment extends Fragment implements MainView {
             case PswPresenter.MISMATCH_CODE:
                 this.textViewMsgSys.setText(getActivity().getResources().getString(R.string.mismatch_code));
                 break;
+            case PswPresenter.RESET_CODE:
+                this.textViewMsgSys.setText(getActivity().getResources().getString(R.string.wrong_code));
+                (new FragmentDialogYesNo(this,
+                        getActivity().getResources().getString(R.string.alert),
+                        getActivity().getResources().getString(R.string.query_reset_psw)))
+                        .show(getFragmentManager(), QUERY_RESET_TAG);
+                break;
             default:
                 this.textViewMsgSys.setText(message);
         }
     }
+
 
     @Override
     public void setData(int dataType) {
@@ -278,6 +288,14 @@ public class PswFragment extends Fragment implements MainView {
             default:
                 this.textViewMsg.setText(getActivity().getResources().getString(R.string.enter_code));
                 break;
+        }
+    }
+
+
+    @Override
+    public void onBackDYN(boolean yes) {
+        if(yes){
+            this.presenter.resetPsw();
         }
     }
     //-----End-------------------------------------------

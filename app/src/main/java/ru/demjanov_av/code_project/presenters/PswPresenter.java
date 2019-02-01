@@ -8,6 +8,8 @@ import ru.demjanov_av.code_project.views.PswFragment;
 
 public class PswPresenter {
     //-----Constants variables begin---------------------
+    public final static int WRONG_CODE_LIMIT =5;
+
     //-----Work code begin-------------------------------
     public final static int ENTER_CODE = 0;
     public final static int ENTER_NEW_CODE = 1;
@@ -21,6 +23,7 @@ public class PswPresenter {
     //-----Fail code begin-------------------------------
     public final static int WRONG_CODE = 0;
     public final static int MISMATCH_CODE = 1;
+    public final static int RESET_CODE = 2;
     //-----Fail code end----------------------------------
     //-----Constants variables end------------------------
 
@@ -28,8 +31,13 @@ public class PswPresenter {
     //-----Class variables begin--------------------------
     private int[] inputNumbers;
     private PswFragment pswFragment;
-    private int workMode;
     //-----Class variables end----------------------------
+
+
+    //-----Flags variables begin--------------------------
+    private int workMode;
+    private int wrongCodeCounter = 0;
+    //-----Flags variables end----------------------------
 
 
     /////////////////////////////////////////////////////
@@ -95,6 +103,19 @@ public class PswPresenter {
     }
 
 
+    /////////////////////////////////////////////////////
+    // Method resetPsw
+    ////////////////////////////////////////////////////
+    public void resetPsw(){
+        //FixMe чистим bd, вводим новый PSW
+
+        this.workMode = ENTER_NEW_CODE;
+        this.pswFragment.setData(ENTER_NEW_CODE);
+    }
+
+    /////////////////////////////////////////////////////
+    // Method destroy
+    ////////////////////////////////////////////////////
     public void destroy(){
 
     }
