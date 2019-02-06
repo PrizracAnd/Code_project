@@ -22,4 +22,8 @@
     <string name="no">No</string>
     <string name="alert">Alert!!!</string>
     <string name="query_reset_psw">Reset code?</string>
+    <string name="test_enter_open_text">Enter open text:</string>
+    <string name="test_test">Test!</string>
+    <string name="test_encrypt_text">Encrypt_text:</string>
+    <string name="test_decrypt_text">Decrypt text:</string>
 </resources>

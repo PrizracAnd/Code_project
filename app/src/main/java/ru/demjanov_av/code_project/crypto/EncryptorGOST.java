@@ -1,63 +1,159 @@
-package ru.demjanov_av.githubviewer.crypto;
+package ru.demjanov_av.code_project.crypto;
 
-
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
 import java.io.UnsupportedEncodingException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+
+import ru.demjanov_av.code_project.crypto.supports.Converters;
+import ru.demjanov_av.code_project.save_load.Preferencer;
 
 /**
  * Created by demjanov on 12.07.2018.
  */
 
 public class EncryptorGOST {
-    private final static String CLASS_NAME = "ENCRYPTOR_GOST";
-    private final static String SYMBOL_CODE_NAME = "UTF-8";
+    //-----Constants variables begin-------------------------
+    private final static String CLASS_NAME      = "ENCRYPTOR_GOST";
+
+    private final static long C232              = 4294967296L;
+
+    //-----Step counters variables begin---------------------
+    private final static long C1                = 1010101L;
+    private final static long C2                = 1010104L;
+    //-----Step counters variables end-----------------------
+    //-----Constants variables end---------------------------
+
+
+    //-----Class variables begin-----------------------------
     private long[] keys;
     private int[][] sBox;
+    private byte[] sBoxBytes;
+
+    private Preferencer preferencer;
 
     private SecureRandom secureRandom = new SecureRandom();
+    //-----Class variables end--------------------------------
 
 
-    public String encrypt(String openText){
-        if(this.keys == null || this.sBox == null){
-            this.keys = generateKeys();
-            this.sBox = generateSbox();
+    //////////////////////////////////////////////////////////
+    ///  Constructors
+    /////////////////////////////////////////////////////////
+    //-----Begin----------------------------------------------
+
+    public EncryptorGOST(Preferencer preferencer) {
+        this.preferencer = preferencer;
+
+        if(!loadGOSTsParameters()){
+            generateSbox();
+            generateKeys();
+            saveGOSTsParameters();
         }
+    }
+    //-----End------------------------------------------------
 
+
+
+    //////////////////////////////////////////////////////////
+    ///  Method encryptGamma
+    /////////////////////////////////////////////////////////
+    @Nullable
+    public String encryptGamma(String openText){
+        GOST gost = new GOST(this.keys, this.sBox);
+        long synchronizedPost = this.secureRandom.nextLong();
+        List<Long> encryptList = new ArrayList<Long>();
+
+        encryptList.add(synchronizedPost);                                      // добавляем sp к
+                                                                                // шифрованному тексту
+        try {
+
+            for (long item : Converters.strToListLong(openText)){
+                long nL = ((synchronizedPost & (C232 - 1)) + C1) & (C232 - 1);  // выполняем приращение sp
+                long nH = ((synchronizedPost >>> 32) + C2) & (C232 - 1);        // --||--
+                synchronizedPost = (nH << 32) | nL;                             // --||--
+
+                gost.setDataBlock(synchronizedPost);                            // передаем значение счетчика на шифрование
+
+                encryptList.add(gost.getEncryptDataBlock() ^ item);             // получаем гамму и
+                                                                                // склыдываем ее по модулю 2
+                                                                                // с шифруемым блоком
+            }
+
+            return Converters.listLongToStr(encryptList);
+        } catch (UnsupportedEncodingException e) {
+            Log.d(CLASS_NAME, ": " + e.getMessage());
+            return null;
+        }
+    }
+
+
+    //////////////////////////////////////////////////////////
+    ///  Method decryptGamma
+    /////////////////////////////////////////////////////////
+    @Nullable
+    public String decryptGamma(String encryptText) {
+        GOST gost = new GOST(this.keys, this.sBox);
+        List<Long> openList = new ArrayList<Long>();
+
+        try {
+            List<Long> encryptList = Converters.strToListLong(encryptText);
+            long synchronizedPost = encryptList.get(0);                         // вычленяем синхропосылку
+
+            encryptList.remove(0);                                        // удаляем синхропосылку
+                                                                                // из текста (чтоб не мешалась)
+            for(long item : encryptList){
+                long nL = ((synchronizedPost & (C232 - 1)) + C1) & (C232 - 1);  // выполняем приращение sp
+                long nH = ((synchronizedPost >>> 32) + C2) & (C232 - 1);        // --||--
+                synchronizedPost = (nH << 32) | nL;                             // --||--
+
+                gost.setDataBlock(synchronizedPost);                            // передаем значение счетчика на шифрование
+
+                openList.add(gost.getEncryptDataBlock() ^ item);                // получаем гамму и
+                                                                                // склыдываем ее по модулю 2
+                                                                                // с зашифрованным блоком
+            }
+
+            return Converters.listLongToStr(openList);
+        } catch (UnsupportedEncodingException e) {
+            Log.d(CLASS_NAME, ": " + e.getMessage());
+            return null;
+        }
+    }
+
+
+    //////////////////////////////////////////////////////////
+    ///  Methods encrypt
+    /////////////////////////////////////////////////////////
+    //-----Begin----------------------------------------------
+    @Nullable
+    public String encrypt(String openText){
         GOST gost = new GOST(this.keys, this.sBox);
 
         try {
             List<Long> encryptList = new ArrayList<Long>();
-            for (long item : strToLong(openText)) {
+            for (long item : Converters.strToListLong(openText)) {
                 gost.setDataBlock(item);
                 gost.encrypt32();
-                encryptList.add(gost.getDataBlock());
+                encryptList.add(gost.getEncryptDataBlock());
             }
-            return longToStr(encryptList);
+            return Converters.listLongToStr(encryptList);
         }catch (Exception e){
             Log.d(CLASS_NAME, ": " + e.getMessage());
             return null;
         }
     }
 
+
+    @Deprecated
     @Nullable
     public String encrypt(String openText, boolean newGOSTsParameters) {
-//        if(newGOSTsParameters){
-//            this.keys = generateKeys();
-//            this.sBox = generateSbox();
-//        }
-//
-//        return encrypt(openText);
 
-        if (newGOSTsParameters || this.keys == null || this.sBox == null) {
-            this.keys = generateKeys();
-            this.sBox = generateSbox();
+        if (newGOSTsParameters) {
+            generateKeys();
+            generateSbox();
         }
 
         GOST gost = new GOST(this.keys, this.sBox);
@@ -66,37 +162,38 @@ public class EncryptorGOST {
 
 
             List<Long> encryptList = new ArrayList<Long>();
-            for (long item : strToLong(openText)) {
+            for (long item : Converters.strToListLong(openText)) {
                 gost.setDataBlock(item);
-                gost.encrypt32();
-                encryptList.add(gost.getDataBlock());
+                encryptList.add(gost.getEncryptDataBlock());
             }
-            return longToStr(encryptList);
+            return Converters.listLongToStr(encryptList);
 
         }catch (Exception e){
             Log.d(CLASS_NAME, ": " + e.getMessage());
             return null;
         }
     }
+    //-----End------------------------------------------------
 
+
+    //////////////////////////////////////////////////////////
+    ///  Method decrypt
+    /////////////////////////////////////////////////////////
     @Nullable
     public String decrypt(String encryptText){
         try {
             if (this.keys == null || this.sBox == null) {
                 throw new Exception("GOSTs parameters is not available!");
-//            Log.d(CLASS_NAME, ": GOSTs parameters is not available!");
-//            return null;
             }
 
             GOST gost = new GOST(this.keys, this.sBox);
 
             List<Long> encryptList = new ArrayList<Long>();
-            for (long item : strToLong(encryptText)) {
+            for (long item : Converters.strToListLong(encryptText)) {
                 gost.setDataBlock(item);
-                gost.decrypt32();
-                encryptList.add(gost.getDataBlock());
+                encryptList.add(gost.getEncryptDataBlock());
             }
-            return longToStr(encryptList);
+            return Converters.listLongToStr(encryptList);
         }catch (Exception e){
             Log.d(CLASS_NAME, ": " + e.getMessage());
             return null;
@@ -104,83 +201,77 @@ public class EncryptorGOST {
     }
 
 
+    //////////////////////////////////////////////////////////
+    ///  Methods save/load GOSTsParameters
+    /////////////////////////////////////////////////////////
+    //-----Begin----------------------------------------------
+    private boolean loadGOSTsParameters(){
+        String sBoxStr = this.preferencer.loadStringWithDecrypt(Preferencer.CRYPTO_PREFERENCES, Preferencer.KEY_GOST_SBOX);
+        String keysStr = this.preferencer.loadStringWithDecrypt(Preferencer.CRYPTO_PREFERENCES, Preferencer.KEY_GOST_KEYS);
 
-    private List<Long> strToLong(String str) throws UnsupportedEncodingException {
-        List<Long> longList = new ArrayList<Long>();
-        byte[] bytes = str.getBytes(SYMBOL_CODE_NAME);
-        long item = 0L;
+        boolean l = sBoxStr != null && keysStr != null;
 
-        for (int i = 0; i < bytes.length;){
-            item ^= item;
-            for (int j = 0; j < 8; j++){
-                if(i >= bytes.length) break;
-                item |= (long)bytes[i] << (j * 8);
-                i++;
+        if(l){
+            byte[] keysBytes;
+            try {
+                this.sBoxBytes = sBoxStr.getBytes(Converters.SYMBOL_CODE_NAME);
+                this.keys = Converters.byteArrayToLongArray(keysStr.getBytes(Converters.SYMBOL_CODE_NAME));
+            } catch (UnsupportedEncodingException e) {
+                Log.d(CLASS_NAME, ": " + e.getMessage());
+                return false;
             }
-            longList.add(item);
         }
 
-        return longList;
+        return l;
     }
 
-    @NonNull
-    private String longToStr(List<Long> longList) throws UnsupportedEncodingException {
-        byte[] bytes = new byte[longList.size() * 8];
-        int i = 0;
 
-        for (long item: longList){
-            for (int j = 0; j < 8; j++){
-                bytes[i] = (byte)(item >>> (j * 8));
-                i++;
-            }
+    private void saveGOSTsParameters(){
+        try {
+            this.preferencer.saveStringWithEncrypt(
+                    Preferencer.CRYPTO_PREFERENCES,
+                    Preferencer.KEY_GOST_SBOX,
+                    new String(this.sBoxBytes, Converters.SYMBOL_CODE_NAME)
+            );
+
+            this.preferencer.saveStringWithEncrypt(
+                    Preferencer.CRYPTO_PREFERENCES,
+                    Preferencer.KEY_GOST_KEYS,
+                    new String(
+                            Converters.longArrayToByteArray(this.keys),
+                            Converters.SYMBOL_CODE_NAME
+                    )
+            );
+        } catch (UnsupportedEncodingException e) {
+            Log.d(CLASS_NAME, ": " + e.getMessage());
         }
+    }
+    //-----End------------------------------------------------
 
-        i = bytes.length;
-        for (int j = i - 1; j >= 0; j--){
-            i = j;
-            if(bytes[j] != 0){
-                break;
-            }
-        }
 
-        byte[] bytes1 = Arrays.copyOf(bytes, i + 1);
-
-        return new String(bytes1, SYMBOL_CODE_NAME);
+    //////////////////////////////////////////////////////////
+    ///  Methods generate
+    /////////////////////////////////////////////////////////
+    //-----Begin----------------------------------------------
+    private void generateSbox(){
+        this.sBoxBytes = new byte[64];
+        this.secureRandom.nextBytes(this.sBoxBytes);
+        this.sBox = Converters.bytesToIntSBOX(this.sBoxBytes);
     }
 
-    private int[][] generateSbox(){
-        byte[] bytes = new byte[64];
-
-        this.secureRandom.nextBytes(bytes);
-
-        int[][] sBox = new int[8][16];
-        int k = 0;
-        for(int i = 0; i < 8; i++){
-            for(int j = 0; j < 16; j++){
-                sBox[i][j] = (bytes[k] & 15);
-                j++;
-                sBox[i][j] = (bytes[k] >>> 4);
-                k++;
-            }
-        }
-
-        return sBox;
-    }
-
-    private long[] generateKeys(){
+    private void generateKeys(){
         byte[] bytes = new byte[32];
 
         this.secureRandom.nextBytes(bytes);
 
-        long[] keys = new long[8];
+        this.keys = new long[8];
         int k = 0;
-        for (int i = 0; i < keys.length; i++){
+        for (int i = 0; i < this.keys.length; i++){
             for(int j = 0; j < 4; j++){
-                keys[i] |= ((long)bytes[k] << (j * 8));
+                this.keys[i] |= ((long)bytes[k] << (j * 8));
                 k++;
             }
         }
-
-        return keys;
     }
+    //-----End------------------------------------------------
 }

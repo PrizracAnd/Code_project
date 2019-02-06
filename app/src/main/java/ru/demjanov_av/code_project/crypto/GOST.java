@@ -1,4 +1,4 @@
-package ru.demjanov_av.githubviewer.crypto;
+package ru.demjanov_av.code_project.crypto;
 
 public class GOST {
     private long dataBlock;         // входные данные для шифрования/расшифровки (64 бита)

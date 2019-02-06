@@ -80,7 +80,7 @@ public class PswFragment extends MyFragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup viewGroup, Bundle savedInstanceState){
         this.view = inflater.inflate(R.layout.fragment_psw, viewGroup, false);
-
+        initializeElements(view);
         return view;
     }
 
@@ -93,7 +93,7 @@ public class PswFragment extends MyFragment {
 
 
         //---Presenter_begin---
-        this.presenter = new PswPresenter(this);
+        this.presenter = new PswPresenter(this, getActivity());
         //---Presenter_end---
     }
 
