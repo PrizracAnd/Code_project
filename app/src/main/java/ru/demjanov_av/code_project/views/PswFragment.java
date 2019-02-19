@@ -1,8 +1,10 @@
 package ru.demjanov_av.code_project.views;
 
+
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.app.FragmentManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,6 +15,7 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import ru.demjanov_av.code_project.R;
+
 import ru.demjanov_av.code_project.presenters.PswPresenter;
 import ru.demjanov_av.code_project.views.dialogs.FragmentDialogYesNo;
 
@@ -31,7 +34,8 @@ public class PswFragment extends MyFragment {
     //-----Class variables begin-------------------------
     private View view;
     private PswPresenter presenter;
-    int[] codeNumbers = new int[CODE_NUMBERS_COUNT];
+    private int[] codeNumbers = new int[CODE_NUMBERS_COUNT];
+    private EnterCodeSuccess mainActivity;
     //-----Class variables begin-------------------------
 
 
@@ -70,7 +74,7 @@ public class PswFragment extends MyFragment {
     // Interface EnterCodeSuccess
     ////////////////////////////////////////////////////
     public interface EnterCodeSuccess{
-        void onEnterCode(String userId);
+        void onEnterCode(byte[] keySpecBytes);
     }
 
 
@@ -261,10 +265,11 @@ public class PswFragment extends MyFragment {
                 break;
             case PswPresenter.RESET_CODE:
                 this.textViewMsgSys.setText(getActivity().getResources().getString(R.string.wrong_code));
-                (new FragmentDialogYesNo(this,
+
+                new FragmentDialogYesNo(this,
                         getActivity().getResources().getString(R.string.alert),
-                        getActivity().getResources().getString(R.string.query_reset_psw)))
-                        .show(getFragmentManager(), QUERY_RESET_TAG);
+                        getActivity().getResources().getString(R.string.query_reset_psw))
+                        .show(getActivity().getFragmentManager(), QUERY_RESET_TAG);
                 break;
             default:
                 this.textViewMsgSys.setText(message);
@@ -283,7 +288,7 @@ public class PswFragment extends MyFragment {
                 this.textViewMsg.setText(getActivity().getResources().getString(R.string.repeat_code));
                 break;
             case PswPresenter.ENTER_CODE_SUCCESS:
-                //FixMe реализация выхода
+                mainActivity.onEnterCode(this.presenter.getSecretKeysBytes());
                 break;
             default:
                 this.textViewMsg.setText(getActivity().getResources().getString(R.string.enter_code));

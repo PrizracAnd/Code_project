@@ -1,6 +1,6 @@
 package ru.demjanov_av.code_project.views;
 
-import android.app.Fragment;
+import android.support.v4.app.Fragment;
 import android.support.annotation.Nullable;
 
 import ru.demjanov_av.code_project.presenters.MainView;

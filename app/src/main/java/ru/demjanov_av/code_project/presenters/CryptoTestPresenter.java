@@ -4,10 +4,8 @@ import android.content.Context;
 
 import ru.demjanov_av.code_project.crypto.AES;
 import ru.demjanov_av.code_project.crypto.EncryptorGOST;
-import ru.demjanov_av.code_project.crypto.supports.Converters;
 import ru.demjanov_av.code_project.save_load.Preferencer;
 import ru.demjanov_av.code_project.views.CryptoTestFragment;
-import ru.demjanov_av.code_project.views.PswFragment;
 
 /**
  * Created by demjanov on 06.02.2019.
@@ -64,7 +62,7 @@ public class CryptoTestPresenter {
         if(this.strEncrypt != null && this.strDecrypt != null) {
             this.ctFragment.setData(0);
         }else {
-            this.ctFragment.setError(0, "Error !!!");
+            this.ctFragment.setError(0, null);
         }
     }
 }

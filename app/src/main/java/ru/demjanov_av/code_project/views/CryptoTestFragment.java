@@ -24,7 +24,7 @@ public class CryptoTestFragment extends MyFragment {
     //-----Class variables begin-------------------------
     private View view;
     private CryptoTestPresenter presenter = null;
-    //-----Class variables begin-------------------------
+    //-----Class variables end---------------------------
 
 
     //-----View elements variables begin-----------------
@@ -96,8 +96,15 @@ public class CryptoTestFragment extends MyFragment {
 
     @Override
     public void setError(int number, @Nullable String message) {
-        Toast toast = new Toast(getActivity());
-        //FixMe !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        switch (number) {
+            case 0:
+                Toast.makeText(getActivity(), getResources().getString(R.string.error), Toast.LENGTH_LONG).show();
+                break;
+            default:
+                Toast.makeText(getActivity(), getResources().getString(R.string.error), Toast.LENGTH_LONG).show();
+                break;
+
+        }
     }
 
     @Override
